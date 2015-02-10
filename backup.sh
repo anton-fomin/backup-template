@@ -4,11 +4,14 @@ set -o pipefail
 
 BACKUP_DIR=tmp
 ITEMS_LEFT=15
-
+LOCKFILE=/tmp/backup.lock
+WAIT_TIMEOUT=30
 
 function doBackup {
 	local filename=$1
+	sleep 30
 	touch $BACKUP_DIR/$filename
+#		pg_basebackup -D $BACKUP_DIR/$filename -x -F tar -z -v
 }
 
 function cleanUp {
@@ -33,7 +36,10 @@ function backupTime {
 	echo $date
 }
 
+(
+flock -x -w $WAIT_TIMEOUT 99
 echo "Doing backup"
 doBackup $(backupTime)
 echo "Done"
 cleanUp
+) 99>$LOCKFILE
